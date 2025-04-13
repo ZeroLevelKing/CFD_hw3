@@ -81,7 +81,7 @@ u_j^{n+1} = u_j^{n-1} - \sigma(u_{j+1}^n - u_{j-1}^n).
 截断误差主项 $O(\Delta t^2, \Delta x^2)$，\textbf{二阶精度}，无耗散但存在相位误差。
 
 
-
+\newpage
 \section{代码调试与生成}
 \subsection{代码组成}
 程序主要分成四个部分：
@@ -135,10 +135,16 @@ git的commit记录如下：
     \includegraphics[width=0.8\textwidth]{c1.png} 
 \end{figure}
 
-
+\newpage
 \section{结果讨论与物理解释}
 
 \subsection{稳定性验证}
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{Figure_1.png}
+    \caption{稳定性验证：各子图对应(a)LW-0.8, (b)LW-1.1, (c)WB-1.5, (d)WB-2.2, (e)LF-0.95, (f)LF-1.05}
+    \label{fig:stability}
+\end{figure}
 如图\ref{fig:stability}所示，数值实验验证稳定性条件（初始条件为方波，$\Delta x=0.1$）：
 
 \begin{itemize}
@@ -160,13 +166,6 @@ git的commit记录如下：
         \item $\sigma=1.05$时振荡增长（子图f），违反$\sigma\leq1$条件
     \end{itemize}
 \end{itemize}
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=\textwidth]{Figure_1.png}
-\caption{稳定性验证：各子图对应(a)LW-0.8, (b)LW-1.1, (c)WB-1.5, (d)WB-2.2, (e)LF-0.95, (f)LF-1.05}
-\label{fig:stability}
-\end{figure}
 
 \subsection{精度验证}
 图\ref{fig:convergence}展示Lax-Wendroff格式的收敛性（$\sigma=0.8$, $u_0=\sin(4\pi x)$）：
