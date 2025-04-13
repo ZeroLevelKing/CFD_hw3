@@ -16,13 +16,149 @@
 \maketitle
 
 \section{数理算法原理}
+对于一阶波动方程，采用三种数值格式进行求解，
+分别为Lax-Wendroff格式、Warming-Beam格式和Leap-frog格式。
+\subsection{Lax-Wendroff格式}
+\subsubsection{离散格式推导}
+对一阶波动方程进行泰勒展开至二阶项，时间导数替换为空间导数：
+\begin{align}
+\frac{\partial u}{\partial t} &= -\frac{\partial u}{\partial x}, \\
+\frac{\partial^2 u}{\partial t^2} &= \frac{\partial^2 u}{\partial x^2}.
+\end{align}
+离散形式为：
+\begin{equation}
+u_j^{n+1} = u_j^n - \frac{\sigma}{2}(u_{j+1}^n - u_{j-1}^n) + \frac{\sigma^2}{2}(u_{j+1}^n - 2u_j^n + u_{j-1}^n),
+\end{equation}
+其中 $\sigma = \Delta t / \Delta x$ 为CFL数。
+
+\subsubsection{稳定性分析}
+傅里叶模式代入得放大因子：
+\begin{equation}
+g = 1 - i\sigma \sin(k\Delta x) - \sigma^2(1 - \cos(k\Delta x)).
+\end{equation}
+稳定性条件为 $|g|^2 \leq 1$，解得 $\sigma \leq 1$。
+
+\subsubsection{精度分析}
+截断误差主项为 $O(\Delta t^2, \Delta x^2)$，故为\textbf{二阶精度}。
+
+\subsection{Warming-Beam格式}
+\subsubsection{离散格式推导}
+迎风三点差分格式：
+\begin{equation}
+u_j^{n+1} = u_j^n - \sigma(u_j^n - u_{j-1}^n) + \frac{\sigma(\sigma-1)}{2}(u_j^n - 2u_{j-1}^n + u_{j-2}^n).
+\end{equation}
+
+\subsubsection{稳定性分析}
+
+将傅里叶模式$u_j^n = g^n e^{ikj\Delta x}$代入格式(5)，得到放大因子：
+
+\begin{equation}
+g=1-\sigma\left(1-e^{-i k\Delta x}\right)+\frac{\sigma(\sigma-1)}{2}\left(1-2 e^{-i k\Delta x}+e^{-i 2 k\Delta x}\right). 
+\end{equation}
+
+计算模平方$|g|^2$，通过极值分析可得稳定性条件为：
+
+$$
+0 \leq \sigma \leq 2
+$$
+
+当$\sigma=0.5$时，对所有波数$k$均有$|g|^2 \leq 1$，验证格式的稳定性。
+
+\subsubsection{精度分析}
+空间差分不对称导致\textbf{二阶精度}，伴随显著色散误差。
+
+\subsection{Leap-frog格式}
+\subsubsection{离散格式推导}
+时间-空间中心差分：
+\begin{equation}
+u_j^{n+1} = u_j^{n-1} - \sigma(u_{j+1}^n - u_{j-1}^n).
+\end{equation}
+
+\subsubsection{稳定性分析}
+特征方程解满足 $|g| = 1$，中性稳定条件 $\sigma \leq 1$。
+
+\subsubsection{精度分析}
+截断误差主项 $O(\Delta t^2, \Delta x^2)$，\textbf{二阶精度}，无耗散但存在相位误差。
+
 
 
 \section{代码生成与调试}
 
 
-\section{结果讨论和物理解释}
+\section{结果讨论与物理解释}
 
+\subsection{稳定性验证}
+通过数值实验验证三种格式的稳定性特征：
+
+\begin{itemize}
+    \item \textbf{Lax-Wendroff 格式}
+    \begin{itemize}
+        \item $\sigma=0.8$时解保持稳定，波形传播正常
+        \item $\sigma=1.1$时出现指数型发散，验证$\sigma\leq1$的必要性
+    \end{itemize}
+    
+    \item \textbf{Warming-Beam 格式}
+    \begin{itemize}
+        \item $\sigma=1.5$时解保持稳定，但波形出现畸变
+        \item $\sigma=2.2$时计算迅速发散，确认$\sigma\leq2$的上限
+        \item $\sigma=0.3$时稳定，证明下限$\sigma\geq0$有效
+    \end{itemize}
+    
+    \item \textbf{Leap-frog 格式}
+    \begin{itemize}
+        \item $\sigma=0.95$时保持中性稳定，但出现寄生振荡
+        \item $\sigma=1.05$时振幅持续增长，违反稳定性条件
+    \end{itemize}
+\end{itemize}
+
+\subsection{精度验证}
+通过网格加密实验观察收敛特性：
+
+\begin{itemize}
+    \item Lax-Wendroff和Leap-frog格式的误差随$\Delta x$减小呈二次收敛趋势
+    \item Warming-Beam格式在$\sigma=1.5$时因稳定性限制收敛速率下降
+    \item 三种格式的收敛阶与理论截断误差分析一致
+\end{itemize}
+
+\subsection{耗散与相位特性}
+对比方波传播的数值解行为：
+
+\begin{itemize}
+    \item \textbf{Lax-Wendroff 格式}
+    \begin{itemize}
+        \item 波形前缘出现轻微过冲，后缘有耗散衰减
+        \item 相位滞后现象明显，高频分量传播速度偏慢
+    \end{itemize}
+    
+    \item \textbf{Warming-Beam 格式}
+    \begin{itemize}
+        \item 强数值耗散导致波峰幅值显著降低
+        \item 波形前缘出现超前相位误差
+        \item 高频振荡成分被有效抑制
+    \end{itemize}
+    
+    \item \textbf{Leap-frog 格式}
+    \begin{itemize}
+        \item 保持幅值守恒特性，无可见耗散
+        \item 产生对称的寄生振荡，波形分裂为双峰结构
+        \item 相位误差表现为波包中心位置的周期性偏移
+    \end{itemize}
+\end{itemize}
+
+\subsection{综合对比}
+\begin{table}[h]
+    \centering
+    \caption{数值格式特性总结}
+    \begin{tabular}{l|ccc}
+    特性         & L-W格式 & W-B格式 & Leap-frog \\ \hline
+    CFL条件      & [0,1]   & [0,2]   & [0,1]     \\
+    耗散性       & 弱      & 强      & 无        \\
+    相位误差     & 滞后    & 超前    & 分裂      \\
+    适用场景     & 光滑解  & 耗散控制 & 守恒系统  \\
+    \end{tabular}
+\end{table}
+
+三种格式呈现显著不同的行为特征，与理论分析中的放大因子特性和差分格式构造方式一致。实际计算时应根据问题物理特性选择合适格式。
 %附录
 \newpage
 \appendix
