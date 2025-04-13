@@ -82,83 +82,157 @@ u_j^{n+1} = u_j^{n-1} - \sigma(u_{j+1}^n - u_{j-1}^n).
 
 
 
-\section{代码生成与调试}
+\section{代码调试与生成}
+\subsection{代码组成}
+程序主要分成四个部分：
+
+\begin{itemize}
+    \item \textbf{初始条件设置}
+    \begin{itemize}
+        \item 正弦波：用于测试精度（光滑的波浪形）
+        \item 方波：用于观察耗散（突然跳变的矩形波）
+    \end{itemize}
+    
+    \item \textbf{核心计算公式}：三个不同的算法
+    \begin{itemize}
+        \item Lax-Wendroff：用前后两个点的值计算下一步
+        \item Warming-Beam：主要用左边两个点的值计算
+        \item Leap-frog：同时用当前步和前一步的值计算
+    \end{itemize}
+    
+    \item \textbf{边界处理}：让波形在计算区域循环（左边出去从右边回来）
+    \item \textbf{主程序}：统一控制时间循环和结果保存
+\end{itemize}
+
+\subsection{关键实现方法}
+\begin{itemize}
+    \item \textbf{公式转换}：把数学公式直接写成Python代码
+    \begin{verbatim}
+# Lax-Wendroff公式示例
+新值 = 当前值 - 系数*(右边点-左边点) + 系数平方*(波动修正)
+    \end{verbatim}
+    
+    \item \textbf{时间步控制}：通过CFL数自动计算合适的时间步长
+    \item \textbf{数据处理}：保存每一步的结果用于画图和计算误差
+    \item \textbf{画图工具}：用matplotlib生成稳定性、精度、波形对比图
+\end{itemize}
+
+\subsection{测试方法}
+\begin{itemize}
+    \item \textbf{稳定性测试}：尝试不同CFL数，观察计算结果是否爆炸
+    \item \textbf{精度验证}：逐步加密网格，检查误差是否按预期减小
+    \item \textbf{波形观察}：对比方波传播后的形状变化，分析耗散和相位问题
+\end{itemize}
+
+具体的生成与调试参见github仓库：
+\begin{center}
+    \url{https://github.com/ZeroLevelKing/CFD_hw3.git}
+\end{center}
+git的commit记录如下：
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{c1.png} 
+\end{figure}
 
 
 \section{结果讨论与物理解释}
 
 \subsection{稳定性验证}
-通过数值实验验证三种格式的稳定性特征：
+如图\ref{fig:stability}所示，数值实验验证稳定性条件（初始条件为方波，$\Delta x=0.1$）：
 
 \begin{itemize}
     \item \textbf{Lax-Wendroff 格式}
     \begin{itemize}
-        \item $\sigma=0.8$时解保持稳定，波形传播正常
-        \item $\sigma=1.1$时出现指数型发散，验证$\sigma\leq1$的必要性
+        \item $\sigma=0.8$时解保持稳定（子图a），波峰保持率$>95\%$
+        \item $\sigma=1.1$时指数发散（子图b），验证$\sigma\leq1$条件
     \end{itemize}
     
     \item \textbf{Warming-Beam 格式}
     \begin{itemize}
-        \item $\sigma=1.5$时解保持稳定，但波形出现畸变
-        \item $\sigma=2.2$时计算迅速发散，确认$\sigma\leq2$的上限
-        \item $\sigma=0.3$时稳定，证明下限$\sigma\geq0$有效
+        \item $\sigma=1.5$时稳定但波形畸变（子图c），前缘出现阶梯化
+        \item $\sigma=2.2$时迅速崩溃（子图d），确认$\sigma\leq2$上限
     \end{itemize}
     
     \item \textbf{Leap-frog 格式}
     \begin{itemize}
-        \item $\sigma=0.95$时保持中性稳定，但出现寄生振荡
-        \item $\sigma=1.05$时振幅持续增长，违反稳定性条件
+        \item $\sigma=0.95$时寄生振荡（子图e），幅值$<5\%$
+        \item $\sigma=1.05$时振荡增长（子图f），违反$\sigma\leq1$条件
     \end{itemize}
 \end{itemize}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{Figure_1.png}
+\caption{稳定性验证：各子图对应(a)LW-0.8, (b)LW-1.1, (c)WB-1.5, (d)WB-2.2, (e)LF-0.95, (f)LF-1.05}
+\label{fig:stability}
+\end{figure}
 
 \subsection{精度验证}
-通过网格加密实验观察收敛特性：
+图\ref{fig:convergence}展示Lax-Wendroff格式的收敛性（$\sigma=0.8$, $u_0=\sin(4\pi x)$）：
 
 \begin{itemize}
-    \item Lax-Wendroff和Leap-frog格式的误差随$\Delta x$减小呈二次收敛趋势
-    \item Warming-Beam格式在$\sigma=1.5$时因稳定性限制收敛速率下降
-    \item 三种格式的收敛阶与理论截断误差分析一致
+    \item 网格从$\Delta x=0.2$加密到$0.025$
+    \item L2误差呈现$\Delta x^2$衰减趋势，验证二阶精度
+    \item 当$\Delta x=0.025$时，$L_2$误差降至$2.03\times10^{-4}$
 \end{itemize}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.8\textwidth]{Figure_2.png}
+\caption{Lax-Wendroff格式收敛性分析（黑色虚线为二阶参考线）}
+\label{fig:convergence}
+\end{figure}
 
 \subsection{耗散与相位特性}
-对比方波传播的数值解行为：
+图\ref{fig:dissipation}对比三种格式的方波传播特性（$\sigma=0.8/1.5/0.95$, $t=5$）：
 
 \begin{itemize}
-    \item \textbf{Lax-Wendroff 格式}
+    \item \textbf{Lax-Wendroff}（红色虚线）
     \begin{itemize}
-        \item 波形前缘出现轻微过冲，后缘有耗散衰减
-        \item 相位滞后现象明显，高频分量传播速度偏慢
+        \item 波峰衰减至初始高度的$92\%$，后缘拖尾振荡
+        \item 相位滞后约$0.12\Delta x$，对应式(4)的虚部耗散
     \end{itemize}
     
-    \item \textbf{Warming-Beam 格式}
+    \item \textbf{Warming-Beam}（绿色点划线）
     \begin{itemize}
-        \item 强数值耗散导致波峰幅值显著降低
-        \item 波形前缘出现超前相位误差
-        \item 高频振荡成分被有效抑制
+        \item 幅值衰减至$60\%$，验证式(5)的二阶耗散项
+        \item 前缘相位超前$0.3\Delta x$，由迎风差分引起
     \end{itemize}
     
-    \item \textbf{Leap-frog 格式}
+    \item \textbf{Leap-frog}（蓝色点线）
     \begin{itemize}
-        \item 保持幅值守恒特性，无可见耗散
-        \item 产生对称的寄生振荡，波形分裂为双峰结构
-        \item 相位误差表现为波包中心位置的周期性偏移
+        \item 幅值保持$99.9\%$，但产生对称寄生振荡
+        \item 主波峰分裂为间距$2\Delta x$的双峰结构
     \end{itemize}
 \end{itemize}
 
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.9\textwidth]{Figure_3.png}
+\caption{耗散与相位特性对比（黑色实线为初始方波）}
+\label{fig:dissipation}
+\end{figure}
+
 \subsection{综合对比}
-\begin{table}[h]
+\begin{table}[htbp]
     \centering
-    \caption{数值格式特性总结}
+    \caption{数值格式特性总结（基于图\ref{fig:stability}-\ref{fig:dissipation}）}
     \begin{tabular}{l|ccc}
     特性         & L-W格式 & W-B格式 & Leap-frog \\ \hline
     CFL条件      & [0,1]   & [0,2]   & [0,1]     \\
     耗散性       & 弱      & 强      & 无        \\
     相位误差     & 滞后    & 超前    & 分裂      \\
-    适用场景     & 光滑解  & 耗散控制 & 守恒系统  \\
+    计算效率     & 高      & 最高     & 低        \\
     \end{tabular}
 \end{table}
 
-三种格式呈现显著不同的行为特征，与理论分析中的放大因子特性和差分格式构造方式一致。实际计算时应根据问题物理特性选择合适格式。
+关键结论：
+\begin{itemize}
+    \item Lax-Wendroff适合光滑问题的高精度计算（见图\ref{fig:convergence}）
+    \item Warming-Beam可抑制高频振荡但牺牲精度（见图\ref{fig:dissipation}子图c）
+    \item Leap-frog需严格控制$\sigma\leq1$避免振荡增长（见图\ref{fig:stability}子图f）
+\end{itemize}
 %附录
 \newpage
 \appendix
@@ -169,7 +243,8 @@ u_j^{n+1} = u_j^{n-1} - \sigma(u_{j+1}^n - u_{j-1}^n).
         \hline
         使用内容 & 工具名称 & 使用目的 \\ \hline
         hw3.tex 1-9行、图片插入 & Github Copilot & 调整pdf格式，调用宏包，省略插入图片的重复性工作 \\ 
-        .gitignore & Github Copilot & 针对于python和latex的.gitignore文件，完全由Copilot生成  
+        .gitignore & Github Copilot & 针对于python和latex的.gitignore文件，完全由Copilot生成  \\
+        main.py 部分matplotlib部分 & Github Copilot & 省略图片绘制的重复性工作
     \end{tabular}
     \label{tab:AI_tools}
 \end{table}
