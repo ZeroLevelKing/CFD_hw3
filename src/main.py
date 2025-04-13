@@ -114,7 +114,7 @@ for i, nx in enumerate(nx_list):
                label=f'nx={nx}')
 
 # 绘制参考线
-ref_x = [1/50, 1/100]
+ref_x = [1/50, 1/500]
 ref_y = [0.1*(x/ref_x[0])**2 for x in ref_x]
 plt.loglog(ref_x, ref_y, 'k--', lw=1, label='二阶收敛')
 plt.xlabel('网格间距Δx')
